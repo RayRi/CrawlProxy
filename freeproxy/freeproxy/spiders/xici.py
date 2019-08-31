@@ -20,8 +20,6 @@ class XiciSpider(CrawlSpider):
     rules = [
         # Extract 1st page contain proxy
         Rule(LinkExtractor(allow=(r'/[wnt]{2}/',)), callback='parse_detail'),
-        # Rule(LinkExtractor(allow=(r'/[wnt]{2}/',)), callback='parse_detail'),
-        # Rule(LinkExtractor(allow=(r"/[0-9]*")), callback="parse_detail")
     ]
 
     def parse_detail(self, response):
@@ -45,6 +43,11 @@ class XiciSpider(CrawlSpider):
             
         items = loader.load_item()
         yield items
+        # # TODO: Test with interactvate
+        # from scrapy.shell import inspect_response
+        # inspect_response(response, self)
+        next_page = self.start_urls[0] + response.xpath("//div/a[@class='next_page']/@href").extract_first()
+        yield scrapy.Request(next_page, callback=self.parse_detail)
         
     def __fix_security(self, value):
         """Revise the security value
@@ -58,33 +61,3 @@ class XiciSpider(CrawlSpider):
             result is a english words
         """
         return REVISE_DICT[value]
-
-        # for element in response.css("table tr")[1:]:
-        #     area = element.css("td:nth-of-type(1) > img").attrib.get("alt", False)
-            
-        #     if area:
-        #         item["area"] = area.lower()
-        #     else:
-        #         item["area"] = None
-            
-        #     item["ip"] = element.css("td:nth-of-type(2)::text").extract_first()
-        #     item["port"] = element.css("td:nth-of-type(3)::text").extract_first()
-
-        #     secure = element.css("td:nth-of-type(5)::text").extract_first()
-        #     item["security_type"] = REVISE_DICT[secure]
-        #     item["ssl_type"] = element.css("td:nth-of-type(6)::text").extract_first()
-            
-        #     yield item
-
-    # def parse(self, response):
-    #     # TODO: Test with interactvate
-    #     # from scrapy.shell import inspect_response
-    #     # inspect_response(response, self)
-    #     # pass
-    #     item = FreeproxyItem()
-    #     item["proxy"] = response.url
-    #     yield item
-
-if __name__ == "__main__":
-    test = XiciSpider()
-    # test.test()
