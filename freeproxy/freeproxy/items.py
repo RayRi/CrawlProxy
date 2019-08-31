@@ -11,4 +11,8 @@ import scrapy
 class FreeproxyItem(scrapy.Item):
     # define the fields for your item here like:
     # name = scrapy.Field()
-    pass
+    ip = scrapy.Field()
+    port = scrapy.Field(serializer=str)
+    ssl = scrapy.Field() # HTTP version ,eg: http, https
+    security = scrapy.Field() # anonymous or non- anonymous
+    area = scrapy.Field()   # country area
