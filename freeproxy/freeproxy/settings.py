@@ -97,9 +97,10 @@ DEFAULT_REQUEST_HEADERS = {
 
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
-#ITEM_PIPELINES = {
+ITEM_PIPELINES = {
+  "freeproxy.pipelines.ValidateProxyMiddleware": 300,
 #    'freeproxy.pipelines.FreeproxyPipeline': 300,
-#}
+}
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html
@@ -128,3 +129,9 @@ REVISE_DICT = {
   u"高匿": "anonymous",
   u"透明": "public",
 }
+
+# Set up redis config
+REDIS_PORT = 6379
+REDIS_HOST = "localhost"
+REDIS_PASSWD = None
+REDIS_DB = 0
