@@ -22,7 +22,7 @@ NEWSPIDER_MODULE = 'freeproxy.spiders'
 ROBOTSTXT_OBEY = False
 
 # url to test proxy validation
-PROXY_TEST_URLS = "https://www.baidu.com"
+PROXY_TEST_URLS = "http://httpbin.org/ip"
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
 #CONCURRENT_REQUESTS = 32
 
@@ -98,7 +98,7 @@ DEFAULT_REQUEST_HEADERS = {
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-  "freeproxy.pipelines.ValidateProxyMiddleware": 300,
+  "freeproxy.pipelines.ValidateProxyMiddleware": 100,
 #    'freeproxy.pipelines.FreeproxyPipeline': 300,
 }
 
@@ -127,6 +127,7 @@ AUTOTHROTTLE_TARGET_CONCURRENCY = 1.0
 # Alternative dict about data
 REVISE_DICT = {
   u"高匿": "anonymous",
+  u"匿名": "anonymous",
   u"透明": "public",
 }
 

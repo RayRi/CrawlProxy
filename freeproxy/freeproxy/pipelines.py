@@ -7,8 +7,23 @@
 import redis
 import logging
 import numpy as np
+import requests
 
-class ValidateProxyMiddleware(object):
+
+class CheckBase(object):
+    def __init__(self, validate_status_code=[200]):
+        self.validate_code=validate_status_code
+
+    def check(self, url, proxy):
+        try:
+            response = requests.get(url, proxies=proxy, timeout=10)
+            print(response.json())
+            if response.status_code in self.validate_code:
+                return True
+        except (TimeoutError, AttributeError):
+            return False
+
+class ValidateProxyMiddleware(CheckBase):
     @classmethod
     def from_crawler(cls, crawler):
         settings = crawler.settings
@@ -29,6 +44,8 @@ class ValidateProxyMiddleware(object):
             self.single = False
         else:
             raise ValueError("URL is not validate")
+
+        super().__init__()
         
         host = settings["REDIS_HOST"]
         port = settings["REDIS_PORT"]
@@ -57,6 +74,81 @@ class ValidateProxyMiddleware(object):
         """Add specified data
         """
         data = address[np.where(option == dtype)].tolist()
-        if len(data) > 0:
+        result = self.check_validate(data)
+        if len(result) > 0:
             # add into redis
-            self.conn.sadd(dtype, *data)
+            self.conn.sadd(dtype, *result)
+        else:
+            logging.info("该批次 proxies 无效")
+        
+    def check_validate(self, data):
+        if self.single:
+            result = [proxy for proxy in data if self.check(self.urls, proxy)]
+        else:
+            result = []
+            for proxy in data:
+                if all([self.check(url, proxy) for url in self.urls ]):
+                    result.append(proxy)
+        
+        return result
+
+class SingleValidateProxyMiddleware(object):
+    """ Deal with None sequence proxies
+    
+    """
+    @classmethod
+    def from_crawler(cls, crawler):
+        settings = crawler.settings
+        return cls(
+            settings=settings
+        )
+    
+    def __init__(self, settings):
+        """Init variable
+
+        Get two object variable, urls that is settings config is validated 
+        the proxy; single specify only one url, if true
+        """
+        self.urls = settings["PROXY_TEST_URLS"]
+        if isinstance(self.urls, str):
+            self.single = True
+        elif isinstance(self.urls, list):
+            self.single = False
+        else:
+            raise ValueError("URL is not validate")
+
+        
+        host = settings["REDIS_HOST"]
+        port = settings["REDIS_PORT"]
+        db = settings["REDIS_DB"]
+        password=settings["REDIS_PASSWD"]
+        pool = redis.ConnectionPool(
+            host=host, port=port, db=db, password=password, decode_responses=True
+        )
+        self.conn = redis.Redis(connection_pool=pool)
+        
+    def process_item(self, item, spider):
+        # concatent data
+        address = item["ssl"] + r"://" + item["ip"] + r":" + item["port"]
+
+        if self.single:
+            urls = [self.urls]
+        else:
+            urls = self.urls
+
+        for url in urls:
+            try:
+                proxy = {
+                    "https": address,
+                    "http": address,
+                }
+                result = requests.get(url, proxies=proxy, timeout=10).json()
+                logging.info("Value is {}".format(result))
+            except:
+                continue
+        # if all([self.check(url, address) for url in urls ]):
+        #     self.conn.sadd(item["security"], address)
+        # else:
+        #     logging.info("失效 proxy")
+
+        return item
